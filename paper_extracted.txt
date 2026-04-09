@@ -1,0 +1,1447 @@
+RESEARCH ARTICLE
+https:/ /doi.org/10 . 1158/27 67 -9764. CRC-25-0030 
+OPEN AC CESS 
+Inferring Drug–Gene Relationships in Cancer 
+Using Literature-Augmented Large Language 
+Models 
+Ying-Ju Lai
+1,2
+, Li- Ju Wang
+1
+, T yler M. Yasaka
+1,3
+, Yuna Shin
+1,4
+, Michael Ning
+1,5
+, Yanhao Tan
+1,6
+, Chien-Hung Shih
+1
+, 
+Yibing Guo
+1,7
+, Po- Yuan Chen
+1,8
+, Hugh Gallo w ay
+1,9
+, Zhentao Liu
+1,9
+, Arun Das
+1,6
+, George C. Tseng
+2
+, 
+Satda rshan P . Monga
+1,6, 10, 11, 12
+, Yufei Huang
+1,6,9, 13
+, and Yu-Chiao Chiu
+1,6, 11, 14 
+� 
+ABS TRACT 
+Understanding drug–gene relationships is essential for advancing targeted 
+cancer therapies and drug repurposing strategies. However, the vast vol-
+ume of biomedical literature poses significant challenges in efficiently 
+extracting relevant insights. In this study, we developed an automated 
+pipeline that leverages retrieval-augmented large language models (LLM) 
+to infer drug–gene interactions using the most up-to-date biomedical lit-
+erature. By integrating PubMed and state-of-the-art LLMs, our pipeline 
+generates accurate, evidence-based inferences while addressing the limi-
+tations of static LLMs, such as outdated knowledge and the risk of pro-
+ducing misleading results. We systematically validated the pipeline’s 
+performance using curated databases and demonstrated its ability to ac-
+curately identify both well-established and emerging drug targets. Using 
+our pipeline, we constructed a pan-cancer drug–gene interaction network 
+among hundreds of FDA-approved drugs and key oncogenes. In a case 
+study on liver cancer, we identified and validated an association between 
+CTNNB1 mutations and enhanced sensitivity to sorafenib, highlighting a 
+potential therapeutic strategy for this challenging mutation. To facilitate 
+broad accessibility, we developed GeneRxGPT, a user-friendly web appli-
+cation that enables cancer researchers to utilize the pipeline without pro-
+gramming expertise or extensive computational resources. It provides 
+intuitive modules for drug–gene inference and network visualization, 
+streamlining the exploration and interpretation of drug–gene relationships. 
+We anticipate that GeneRxGPT will empower researchers to accelerate 
+drug discovery and development, making it a valuable resource for the 
+cancer research community. 
+Significance: This study presents a novel approach that integrates LLMs 
+with real-time biomedical literature to uncover drug–gene relationships, 
+transforming how cancer researchers identify therapeutic targets, 
+repurpose drugs, and interpret complex molecular interactions. Gen-
+eRxGPT, our user-friendly tool, enables researchers to leverage this ap-
+proach without requiring computational expertise. 
+Intr oduction 
+Understanding the intricate relationships between genes and drugs is critical 
+for advancing cancer treatment and improving patient outcomes. This 
+knowledge underpins drug development by helping researchers decipher the 
+molecular effects of drug perturbations, develop drug repurposing strategies, 
+and optimize therapeutic efficacy (1). Drug–gene target relationships can 
+involve direct drug binding into a gene product, such as a protein, or indirect 
+modulation, in which genes influence drug sensitivity or drugs affect gene 
+activity through downstream signaling pathways or other mechanisms (2, 3). 
+Among the more than 38 million biomedical articles indexed in PubMed, 
+many provide valuable insights into drug–gene interactions (4, 5). However, 
+1
+UPMC Hillman Cancer Cent er , Univ ersity of Pittsburgh School of Medicine, Pitts-
+burgh, Pennsylv ania. 
+2
+Department of Biostatistics and Health Data Science, School 
+of Public Health, Univ ersity of Pittsburgh, Pittsburgh, Pennsylv ania. 
+3
+Medical Sci-
+entist Tr aining Pr ogr am, Univ ersity of Pittsburgh School of Medicine, Pittsbur gh, 
+Pennsylv ania. 
+4
+Department of Electrical and Comput er Engineering, Carnegie 
+Mellon Univ ersity , Pittsburgh, Pennsylv ania. 
+5
+Department of Com puter Science, The 
+Univ ersity of Tex as at Austin, Austin, Te xas. 
+6
+Department of Medicine, Univ ersity of 
+Pittsburgh School of Medicine, Pittsburgh, Pennsylv ania. 
+7
+Department of Human 
+Genetics, School of Public Health, Univ ersity of Pittsburgh, Pittsbur gh, Pennsyl-
+v ania. 
+8
+Institute of Bioinformatics and Sy stems Biology , National Yang Ming Chiao 
+Tung Univ ersity , Hsinchu, Taiwan. 
+9
+Department of Electrical and Comput er Engi-
+neering, Sw anson School of Engineering, Univ ersity of Pittsburgh, Pittsburgh, 
+Pennsylv ania. 
+10
+Department of Pharmacology & Chemical Biology , Univ ersity of 
+Pittsburgh School of Medicine, Pittsburgh, Pennsylv ania. 
+11
+Pittsburgh Liv er Resear ch 
+Cent er , Univer sity of Pittsburgh Medical Cent er and Univ ersity of Pittsburgh School of 
+Medicine, Pittsburgh, Pennsylv ania. 
+12
+Organ Pathobiology and Ther apeutics Institute, 
+Unive rsity of Pittsburgh Medical C enter and Univ ersity of Pittsburgh School of Medicine, 
+Pittsburgh, Penns ylva nia. 
+13
+Department of Pharmaceutical Sciences, Unive rsity of 
+Pittsburgh School of Medicine, Pittsburgh, Pennsylv ania. 
+14
+Department of Computational 
+and Sy stems Biology , Univ ersity of Pittsburgh School of Medicine, Pittsburg h, Pennsylv ania. 
+Y .-J . Lai and L.-J . Wang contribut ed equally to this article. 
+Corr esponding Authors: Yu-Chiao Chiu, UPMC Hillman Cancer Cent er , Univ ersity 
+of Pittsburgh School of Medicine, 5051 Centr e A v enue, Pittsbur gh, P A 15213. E-mail: 
+YUC250@pitt.edu; and Yufei Huang, YUH119@pitt.ed u 
+doi: 10. 1158/27 6 7 -97 64. CRC -25-0030 
+This open acc ess article is distributed under the Cr eative Commons At tribution 
+4.0 International ( C C B Y 4.0) license. 
+©2025 The Authors; Published b y the American Association for Cancer Resear ch 
+AACRJournals.org Cancer Res Commun; 5(4) April 2025 706 
+
+the vast volume of studies makes it challenging for researchers to stay 
+updated and synthesize findings efficiently (6). Therefore, developing an 
+automated pipeline to analyze literature and extract drug–gene relationships 
+is crucial for identifying novel targets and accelerating cancer therapy 
+discovery (7). 
+In recent years, large language models (LLM), such as GPT-4o developed by 
+OpenAI, have demonstrated significant advancements in natural language 
+processing (arXiv 2024.03.04.2303.08774). These models can perform com-
+plex biomedical tasks beyond traditional methods, such as information 
+summarization, knowledge discovery, and complex reasoning (8–10). 
+However, LLMs have notable limitations, such as difficulty incorporating the 
+latest research dynamically and a tendency to generate “hallucinations,” 
+which are plausible but misleading responses not grounded in reliable 
+knowledge (11, 12). To address these issues, “retrieval-augmented genera-
+tion” enhances LLM performance by integrating relevant external sources, 
+such as PubMed literature (13, 14). By incorporating up-to-date data, 
+retrieval-based models can significantly reduce hallucinations and provide 
+more reliable, evidence-based responses (12, 15). However, as implementing 
+these techniques requires programmatic access to databases like PubMed and 
+advanced programming skills, a more accessible tool is needed to democ-
+ratize LLMs and retrieval-augmented methods, particularly for cancer re-
+search, a rapidly evolving field. 
+In this study, we developed an efficient approach for inferring drug–gene 
+target relationships in cancer using LLMs grounded in up-to-date biomedical 
+literature and assessed its reliability. We created an automated pipeline that 
+integrates PubMed’s Application Programming Interface (API) with LLMs 
+to retrieve literature, summarize information, and generate inferences. This 
+pipeline was systematically evaluated using curated drug–gene target data-
+bases, focusing on the impact of PubMed retrieval, comparisons among 
+open-source and proprietary LLMs, and output consistency. We further 
+applied our tool to construct a pan-cancer drug–gene interaction network 
+covering hundreds of oncogenes and FDA-approved drugs. As a case study, 
+we investigated liver cancer, a disease with significant treatment challenges 
+(16, 17), by examining the traditionally undruggable CTNNB1 mutation. We 
+validated its role in modulating sorafenib response using data from a clinical 
+trial and in vitro screens. To enhance accessibility, we developed Gen-
+eRxGPT, a user-friendly web tool implemented with the R Shiny app 
+framework, available at https://shiny.crc.pitt.edu/generxgpt/. Given a gene, 
+drug, and cancer type, this tool summarizes relevant PubMed literature, 
+infers drug–gene relationship, and provides references with direct links. In 
+summary, this study presents an efficient and accurate method for identi-
+fying drug–gene relationships, which has the potential to accelerate phar-
+macogenomic research, advance targeted therapies, and enhance cancer 
+treatment development. 
+Mat erials and Methods 
+Ov er all pipeline design and implementation 
+We developed an automated pipeline designed to infer relationships be-
+tween a drug and a gene, either within a specific cancer type or more 
+broadly across various cancers. The pipeline is built around a LLM that 
+utilizes a retrieval-augmented technique to improve inference accuracy by 
+grounding its responses in current biomedical literature. Specifically, the 
+LLM generates inferences based on relevant abstracts or sentences 
+extracted from PubMed (RRID: SCR_004846) articles. As illustrated in 
+Fig. 1A, the pipeline consists of three primary components: retrieval, 
+augmentation, and generation. The process begins with the retrieval of 
+relevant abstracts or sentences from PubMed that mention interactions 
+between the specified gene and drug in a cancer context. In the augmen-
+tation step, the LLM is directed to incorporate this retrieved information 
+when making inferences about the drug–gene relationship. Finally, the 
+generation phase produces outputs that include an inference of the rela-
+tionship, a rationale for the inference, and a summary of the supporting 
+information retrieved from the literature. To enable full automation, the 
+pipeline integrates the APIs of PubMed and various LLMs. Each compo-
+nent is described in detail in the following sections. 
+Retriev al of liter atur e with drug–gene–cancer 
+information 
+For abstract retrieval, we used a keyword search approach by PubMed’s “Best 
+Match” algorithm (5), which uses machine learning incorporating more than 
+150 relevance factors, such as article usage, term matching, article type, and 
+publication date, to prioritize the most relevant articles (i.e., ranking articles 
+by the “relevance” field). Specifically, we used queries in the format of 
+“<gene> AND <drug> AND <cancer type>,” such as “CDK4 AND palbociclib 
+AND breast cancer.” If a specific cancer type was not specified, we used 
+“cancer” as a general query term to capture broader cancer-related literature. 
+Our pipeline retrieved abstracts using the R rentrez library (PeerJ Preprints 
+2017.08.25.3179), which provides an interface to the Entrez Programming 
+Utilities API developed by the NCBI to access PubMed (18). Because 
+PubMed updates its database daily, our approach ensures access to the most 
+up-to-date biomedical literature. 
+For sentence retrieval, we utilized LitSense (19), a specialized search tool 
+indexing sentences from more than 36 million articles in PubMed and 
+PubMed Central. LitSense ranks sentence relevance using a combination of 
+inverse document frequency for term-based retrieval and text embeddings 
+for semantic similarity to the search query. Using the LitSense API, we 
+queried phrases in the format of “Does <drug> target <gene> in <cancer 
+type>?”—for example, “Does palbociclib target CDK4 in breast cancer?” The 
+top-ranked sentences were extracted for further analysis. Because LitSense 
+regularly fetches updates from PubMed and PubMed Central, it ensures 
+access to the latest sentence-level information. 
+Proprietary and open-sour ce LLMs 
+We evaluated six state-of-the-art LLMs in this study (Supplementary Table 
+S1). GPT-4o (OpenAI) served as the primary model due to its superior 
+performance in recent biomedical studies (medRxiv 2024.08.11.24311810; 
+ref. 20). In addition, we evaluated another proprietary model, Gemini- 
+1.5 Pro (Google; hereafter referred to as Gemini), and four open-source 
+models, namely Llama-3-70B (Meta; Llama-3), Mixtral-8x7B (Mistral AI; 
+Mixtral), Mistral-7B (Mistral AI; Mistral), and Llama-3.2-3B-PubMed 
+(Llama-3.2-PubMed). Of note, Llama-3.2-PubMed is a Llama-3.2–based 
+model fine-tuned specifically for biomedical applications using PubMed 
+data. The proprietary models were accessed via their respective APIs. The 
+open-source LLMs were downloaded and run using the Ollama platform on 
+our local high-performance computing servers with 128 GB memory, 
+16 CPUs, and an L40S 48 GB GPU at the University of Pittsburgh Center for 
+Research Computing. All models were run with their default parameter 
+AACRJournals.org Cancer Res Commun; 5(4) April 2025 70 7 
+GeneRxGPT: LLM-Based Drug–Gene Relationship Inference 
+
+Prompt
+engineering
+Retrieved
+information
++
+Relevant
+abstracts
+Relevant
+sentences GPT-4oQuery
+Gene
+Drug
+Cancer
+Augmentation
+Retrieval
+Researcher
+Response
+Summary
+Inference
+Explanation
+Generation
+You are a biomedical AI system analyzing the relationship between a specific gene and a specific drug in 
+a particular type of cancer. Focusing on the sentences provided, you will
+1. Summarize the key points from all relevant sentences.
+2. Make an inference about the direct targeting relationship between the drug and the gene in the 
+specified cancer based on the sentences, using this format: 
+The drug <drug name> <appears to target, does not appear to target, or is undetermined for> the gene 
+<gene name> in <cancer type> with <high, medium, or low> confidence.
+3. Provide step-by-step explanations for your inference, using full sentences or paragraphs without 
+numeric list indicators like 1., 2., or newline characters ('\n'). If there is ambiguous or contradictory 
+information within the explanation, describe how these issues were resolved during the analysis.
+Note: A 'direct targeting relationship' exists if the drug specifically targets the gene in the specified cancer. 
+If evidence is insufficient, the relationship should be classified as 'undetermined.'  The type of cancer can 
+be general if 'cancer' is provided as the cancer type. 
+Please present your response in JSON format, adhering to this structure:
+{"Inference”:<value>, "Explanation":<value>, "Summary":<value>}
+Note: Be concise and avoid overflow in each section. 
+Gene: {gene from query}
+Drug: {drug from query}
+Cancer type: {cancer from query}
+Sentences to be used:
+{
+Sentence 1.
+Sentence 2.
+...
+Sentence 40.
+}
+ContextDefinitions
+Output 
+formatRetrieved information
+A
+B
+Chain-of-thought
+inference
+Query
++
+PubMed
+LitSense
+FIGURE 1 Automat ed LLM-based pipeline for drug–gene r elationship infer ence. A, Pipeline design. The pipeline is designed to infer the 
+r elationship betw een a gene and a drug within a specific cancer type based on r ele v ant liter atur e. The pr ocess begins with a query containing a 
+specific gene, drug, and cancer type. Rele v ant sentenc es or abstr acts ar e e xtr acted fr om PubMed using LitSense or the PubMed sear ch engine, 
+r espectiv ely . The r etrie v ed information is then c ombined with a pr ompt as input for a LLM. The LLM gener ates a r esponse including a summary of 
+the r etrie v ed information, an infer ence about the drug–gene r elationship within the specified cancer cont e xt, and a detailed e xplanation. B, Pr ompt for 
+infer ence based on sentenc e-le v el r etrie v al. The pr ompt structur e includes cont e xt, chain-of-thought infer ence, definitions, output format, and 
+r etrie v ed information. The cont e xt section instructs the LLM to analyze drug–gene r elationships in a specific cancer type. The chain-of-thought 
+infer ence section outlines the steps for the LLMs to summarize r etrie v ed information, infer the drug–gene r elationship, and e xplain the infer ence 
+pr oc ess. The definition section clarifies k e y terms, such as drug–gene targeting r elationships. The output format section specifies the r esponse 
+structur e for auto mated r esult handling and do wnstr eam analysis. The pr ompt is merged with the query elements ( gene, drug, and canc er type) and 
+r etrie v ed sentenc es. For abstr act-le v el r etrie v al, “sentenc es” is r eplaced b y “abstr acts. ” The alt ernativ e pr ompt designed to captur e both dir ect binding 
+and indir ect modulation r elationships is sho wn in Supplementary Fig. S1. AI, artificial intelligenc e. 
+708 Cancer Res Comm un; 5(4) April 2025 https://doi.org/10.1158/2767-9764.CRC-25-0030 | CANCER RESEARCH COMMUNICATIONS 
+Lai et al. 
+
+settings, including temperature control. The implementation of the baseline 
+non-LLM BioBERT model (version BioBERT-Base-v1.1; ref. 21) is described 
+in the Supplementary Methods. 
+Promp t design, prompt engineering, and LLM input/ output 
+The prompt serves as the text input that instructs the LLM to generate its 
+output. We used prompt engineering techniques to ensure accurate and 
+reliable responses. The prompt is organized into five sections: context, chain- 
+of-thought inference, definition, output format, and retrieved information 
+(Fig. 1B; Supplementary Fig. S1). 
+1. Context: The prompt begins by assigning the LLM the role of a bio-
+medical artificial intelligence system, specifying its objective to analyze 
+drug–gene relationships within a specific cancer type based on pro-
+vided literature rather than relying on the internal knowledge of 
+the LLM. 
+2. Chain-of-thought inference: The prompt uses a chain-of-thought 
+strategy to guide the LLM through a logical and rational inference 
+process (22). Specifically, we first instructed the LLM to summarize the 
+key points from the retrieved information to ensure it comprehends the 
+content. Next, it infers the drug–gene relationship with a confidence 
+level. A core feature of the chain-of-thought strategy is to prompt the 
+LLM to provide step-by-step explanations for the reasoning behind the 
+inference. This technique has been shown to enhance reasoning ca-
+pabilities (23). Additionally, we instructed the LLM to address how it 
+resolves any ambiguous or contradictory information found in the 
+retrieved data. 
+3. Definitions: We defined key terms, such as “direct targeting relation-
+ship” and “undetermined relationship,” in the context of drug–gene 
+interactions in cancer. 
+4. Output format: We specified a structured response format to facilitate 
+further analysis. 
+5. Retrieved information: The prompt ends by appending the retrieved 
+abstracts or sentences to provide the LLM with relevant literature as 
+evidence for the analysis. 
+This prompt is then fed into the LLM to generate responses. As instructed in 
+the chain-of-thought inference section, the output includes three main 
+components: 
+1 A summary of the retrieved information. 
+2 An inference regarding the relationship between the drug and the gene 
+in cancer, accompanied by a confidence level. The inference follows the 
+following format: 
+“The drug <drug name> <appears to target, does not appear to target, 
+or is undetermined for> the gene <gene name> in <cancer type> with 
+<high, medium, or low> confidence.” 
+3 A step-by-step explanation of the inference process. 
+Curat ed drug–gene re lationships for performanc e 
+ev aluation 
+To evaluate the performance of the inference pipeline, we compiled a total of 
+539 positive and negative drug target cases from two databases: CancerDrugs 
+DB and PharmGKB (RRID: SCR_002689). CancerDrugs DB is developed by 
+the Anticancer Fund by collecting approved cancer drugs from various data 
+sources (24). From this database, we extracted a total of 218 drugs that 
+specifically target genes in particular cancer types, which served as positive 
+drug–gene–cancer cases for the benchmark. Because some cases involved 
+rare or highly specific cancer types, we recategorized the cancer types based 
+on the primary sites, resulting in a total of 25 distinct cancer types. Negative 
+drug–gene relationships were curated from PharmGKB (25, 26). We col-
+lected 321 drug–gene pairs annotated as “not associated” in PharmGKB, 
+meaning these pairs were evaluated but not found to have statistically sig-
+nificant relationships. Due to the lack of specific disease annotations for 
+these pairs, we used “cancer” as a general term in our pipeline to maintain 
+focus on oncology. This approach aligns with the limited availability of 
+documented negative cases while prioritizing likely true nonassociations (see 
+“Discussion”). 
+Performance e valuation metrics 
+For quantitative evaluation, LLM inferences were converted to scores from 
+1 to 9: 1 to 3 for nontarget, 4 to 6 for undetermined, and 7 to 9 for target 
+relationships (Supplementary Fig. S2). Confidence levels (low, medium, and 
+high) were integrated; for example, a score of 1 represents a high-confidence 
+nontarget relationship, whereas 9 indicates a high-confidence target 
+relationship. We utilized multiple performance metrics to assess the ability of 
+the LLM to distinguish between positive and negative drug–gene cases. The 
+primary metric was the area under the ROC curve (AUC), which reflects the 
+model’s overall discrimination ability (27). The Youden index (28) was ap-
+plied to determine the threshold score for each LLM in the comparative 
+analysis. Additional evaluation metrics, including accuracy, sensitivity, 
+specificity, precision, recall, F1 score, and κ values, were provided for a 
+comprehensive assessment. 
+Construction of a drug–gene int eraction netw ork 
+To construct a comprehensive drug–gene interaction network, we refined 
+the prompt to infer two types of drug-targeting mechanisms: direct 
+binding, in which a drug directly binds to the protein of a gene, and 
+indirect modulation, in which a gene influences drug sensitivity or a drug 
+affects gene expression (Supplementary Fig. S1). The pipeline was applied 
+to pairwise combinations of 214 well-documented oncogenes from the 
+Catalogue of Somatic Mutations in Cancer (RRID: SCR_002260; the tier- 
+1 Cancer Gene Census collection; ref. 29) and 144 FDA-approved on-
+cology drugs from the Repurposing Data Portal (30). The LLM was 
+instructed to summarize the major cancer type(s) associated with each 
+drug–gene interaction based on retrieved sentences. We categorized each 
+interaction into 26 cancer groups: 25 major cancer types defined by 
+primary sites, and an “other” category for less common cancer types. 
+Each drug–gene pair could be assigned to multiple groups, reflecting its 
+relevance across different cancer types. The identified drug–gene inter-
+actions were visualized and analyzed as a network using Cytoscape 
+(RRID: SCR_003032; ref. 31). 
+Dev elopment of the GeneRxGPT w eb to ol 
+We developed GeneRxGPT, an interactive web tool designed to make the 
+pipeline accessible. In addition to retrieving literature from PubMed and 
+LitSense, GeneRxGPT utilizes the PubChemR and Webchem R libraries to 
+obtain drug-related information from PubChem (RRID: SCR_004284), 
+including drug structures, Simplified Molecular Input Line Entry System 
+codes, and biochemical features. The web server was developed using 
+AACRJournals.org Cancer Res Commun; 5(4) April 2025 709 
+GeneRxGPT: LLM-Based Drug–Gene Relationship Inference 
+
+R (v4.4.0) and R Shiny (v1.8.1; ref. 32). The httr (33) R library (v1.4.7) 
+interfaced with the APIs of LitSense and proprietary LLMs. Additional 
+primary R libraries for data processing and visualization included rcdk 
+(34) and stringr. The web tool also provides access to the drug–gene in-
+teraction network with easy-to-use filtering and visualization tools. De-
+tailed documentation and examples guide users through its features. The 
+web server currently runs on VMWare infrastructure with 8 Intel cores 
+and 64 GB of RAM, hosted at the University of Pittsburgh Center for 
+Research Computing. 
+Data a vailabili ty 
+All datasets used in this study are accessible through the sources described in 
+the previous sections, Supplementary Methods, and cited references. The 
+developed pipeline and results are available via the GeneRxGPT web tool at 
+https://shiny.crc.pitt.edu/generxgpt/. The source code is available on figshare 
+(https://doi.org/10.6084/m9.figshare.27849816). 
+Results 
+Automat ed pipeline for liter atur e-based inferenc e of 
+drug–gene re lationships 
+We developed a retrieval-augmented approach to harness the capabilities 
+of emerging LLMs for inferring drug–gene relationships in cancer. Rather 
+than depending solely on the internal knowledge of LLMs, our approach 
+integrates literature-based evidence to ensure that inferences are groun-
+ded in the most current, referenceable data. We used GPT-4o, the latest 
+model released by OpenAI, as the primary model due to its superior 
+performance in recent biomedical studies. The pipeline, as illustrated in 
+Fig. 1A, interfaces programmatically with GPT-4o and PubMed and 
+comprises three core components: (i) retrieval of relevant sentences or 
+abstracts from PubMed that describe interactions between the drug, gene, 
+and cancer type of interest; (ii) augmentation of LLM-generated infer-
+ences by incorporating this retrieved information; and (iii) generation of 
+inference results. 
+The pipeline produces three main outputs: (i) a concise summary of the 
+retrieved literature; (ii) an inference regarding the drug–gene relationship 
+within a cancer context, with an associated confidence level; and (iii) a step- 
+by-step explanation that clarifies how the retrieved literature supports the 
+inference. By grounding the inference process in current literature, our 
+pipeline enhances result transparency and interpretability, which are im-
+portant for ensuring the robustness and reliability of drug–gene interaction 
+exploration. We instructed the LLM to infer two types of drug–target rela-
+tionships: (i) direct binding (for systematic performance evaluation; Fig. 1B) 
+and (ii) indirect modulation (for constructing a drug–gene interaction net-
+work that includes both direct and indirect relationships; Supplementary 
+Fig. S1). 
+Identification of w ell-studied and misclassified drug 
+targets 
+To illustrate the effectiveness of our pipeline in identifying pharmaco-
+genomic relationships, we began by testing several well-known drug 
+targets. For instance, palbociclib is a chemotherapeutic agent and the 
+first CDK4 inhibitor approved for breast cancer (35). Our pipeline 
+summarized sentences retrieved from PubMed concerning palbociclib, 
+CDK4, and breast cancer and correctly stated that palbociclib has been 
+approved for metastatic estrogen receptor/progesterone receptor– 
+positive, HER2-negative breast cancer (Fig. 2A; ref. 36). It correctly 
+inferred that palbociclib targets CDK4 in breast cancer with high con-
+fidence. We then assessed the capability to identify nonassociations, such 
+as metformin and BRCA2. The pipeline retrieved sentences discussing 
+the targeting of BRCA2 in breast cancer by various drugs, including 
+PARP inhibitors and mTORC1 (37), but found no evidence linking 
+metformin to BRCA2. Consequently, the inference reported with high 
+confidence that metformin does not target BRCA2 in breast cancer 
+(Supplementary Fig. S3). 
+We further examined challenging cases involving drugs whose primary 
+mechanisms have been refined by new evidence. One such case was CX- 
+5461, which was initially characterized as targeting RNA polymerase I 
+transcription (38). However, emerging evidence published in 2021 identified 
+TOP2B as its primary target, raising potential safety concerns (39). When 
+querying GPT-4o directly during our study in October 2024 (version 2024- 
+05-13) without any retrieved literature, the model incorrectly inferred that 
+CX-5461 does not target TOP2B in cancer (Supplementary Fig. S4), likely 
+due to outdated information within its internal knowledge base. In contrast, 
+our pipeline, even when presented with mixed information from both older 
+and recent studies, correctly identified that CX-5461 targets TOP2B in cancer 
+with high confidence (Fig. 2B). A similar case was observed with OTS964, a 
+drug initially developed to target the protein kinase TOPK (40) but later 
+shown to primarily target CDK11 (41, 42). Our pipeline correctly inferred 
+that OTS964 targets CDK11 with high confidence, whereas GPT-4o alone 
+incorrectly identified TOPK as the main target (Supplementary Fig. S5). 
+These examples, covering well-known, nonassociated, and misclassified drug 
+targets, demonstrate the robustness of our pipeline based on current 
+literature. 
+Sy stem atic performanc e ev aluation for optimizing 
+information retrie v al 
+We systematically evaluated the ability our pipeline to distinguish tar-
+geting (positive) and nonassociating (negative) drug–gene relationships. 
+For this assessment, we compiled a dataset of 539 well-documented 
+drug–gene cases from CancerDrugs DB and PharmGKB, including 
+218 positive and 321 negative cases as ground truth. To focus the eval-
+uation, we specifically instructed GPT-4o to infer direct targeting rela-
+tionships (Fig. 1B). The inference results were converted into scores to 
+quantitatively assess performance (see “Materials and Methods”; Sup-
+plementary Fig. S2). 
+A critical aspect of this evaluation was to determine the optimal amount of 
+retrieved information to maximize performance, as retrieving more data 
+could either provide useful context or introduce irrelevant information. 
+After testing retrievals ranging from 1 to 100 sentences, we found that re-
+trieving the top 40 sentences yielded the highest AUC of 0.94 (Supple-
+mentary Fig. S6A; Supplementary Table S2). On average, our pipeline 
+analyzed each drug–gene–cancer case in 4.3 seconds at a cost of $0.014, 
+based on API rates as of October 2024. This represents a 56-fold increase in 
+speed over human reading time (43). Similarly, we analyzed the numbers of 
+retrieved abstracts and found that the top 10 most relevant abstracts pro-
+duced the best results (AUC ¼ 0.91; Supplementary Fig. S6B; Supplementary 
+Table S3). 
+710 Cancer Res Comm un; 5(4) April 2025 https://doi.org/10.1158/2767-9764.CRC-25-0030 | CANCER RESEARCH COMMUNICATIONS 
+Lai et al. 
+
+Performance c omparison across vari ous LLMs 
+We further compared GPT-4o with five other state-of-the-art LLMs across 
+sentence-level, abstract-level, and no retrieval. GPT-4o with sentence re-
+trieval achieved the highest performance overall (AUC ¼ 0.94; Fig. 2C), 
+surpassing its own abstract-level (AUC ¼ 0.91) and non-retrieval 
+(AUC ¼ 0.88) methods. The other proprietary model, Gemini, performed 
+comparably well, with sentence, abstract, and no retrieval yielding AUCs of 
+0.92, 0.90, and 0.87, respectively. Interestingly, Mistral, an open-source LLM, 
+performed better without retrieval, achieving an AUC of 0.91 (Fig. 2C). 
+We also used κ values to assess the agreement between inferred drug–gene 
+relationships and the ground truth. Gemini and GPT-4o demonstrated the 
+highest agreement (κ values, 0.84 and 0.80; Fig. 2D) when using sentence- 
+level retrieval (Supplementary Tables S4–S6). In contrast, Llama-3.2- 
+PubMed and Mistral performed the worst with abstract-level retrieval 
+AB
+CD
+κ
+0.00
+0.25
+0.50
+0.75
+1.00
+GPT−4o Gemini Llama-3 Mixtral Mistral
+Query: Palbociclib, CDK4, breast cancer
+Model: GPT-4o with sentence-level retrieval
+Inference
+The drug palbociclib appears to target the gene CDK4 in breast cancer 
+with high confidence.
+Summary
+Explanation
+Query: CX-5461, TOP2B, cancer
+Model: GPT-4o with sentence-level retrieval
+Inference
+The drug CX-5461 appears to target the gene TOP2B in cancer with 
+high confidence.
+Summary
+Explanation
+Llama-3.2
+-PubMed
+Sentences Abstracts None
+Retrieved information
+AUC
+0.00
+0.25
+0.50
+0.75
+1.00
+GPT−4o Gemini Llama-3 Mixtral MistralLlama-3.2
+-PubMed
+Sentences Abstracts None
+Retrieved information
+Palbociclib is a selective CDK4/6 inhibitor  that has been widely 
+approved for the treatment of various types of breast cancer , 
+particularly ER+, HER2– advanced or metastatic breast cancer. The drug 
+works by targeting the cyclin-dependent kinases CDK4 and CDK6, which 
+are crucial for cell cycle regulation and proliferation in breast cancer cells. 
+Palbociclib has shown significant success in clinical trials and is used as 
+part of combination therapies to improve therapeutic outcomes in breast 
+cancer patients.
+All provided sentences consistently indicate that palbociclib specifically 
+targets CDK4 and CDK6 in breast cancer. There is no contradictory or 
+ambiguous information that suggests otherwise. The approval status of 
+palbociclib for various forms of breast cancer, including ER+, HER2– 
+advanced or metastatic types, further solidifies this relationship. Thus, 
+based on the sentences, it is clear with high confidence that palbociclib 
+directly targets CDK4 in breast cancer.
+CX-5461 primarily targets the gene TOP2B, exhibiting high binding 
+affinity and selective activity  towards it, particularly in high-risk 
+neuroblastoma. Multiple studies confirm the preferential target ing of 
+TOP2B over TOP2A, with significant cytotoxic effects attributed to this 
+interaction. CX-5461 functions as a topoisomerase inhibitor, sp ecifically 
+inhibiting TOP2B, and this interaction has been validated through various 
+biochemical and cellular assays. The targeting of TOP2B by CX-5461 also 
+raises safety concerns due to TOP2B's expression in normal tissues, 
+which warrants close monitoring in clinical trials.
+The provided sentences consistently indicate that CX-5461 primarily 
+targets TOP2B. Multiple lines of evidence from biochemical assays, 
+molecular dynamics simulations, and cellular studies  support that 
+CX-5461 has a higher binding affinity and preferential activity  towards 
+TOP2B over TOP2A. Studies specifically highlight the selective cytotoxic 
+effects of CX-5461 in high-risk neuroblastoma driven by TOP2B inhibition. 
+Additionally, the mention of safety concerns due to TOP2B targeting in 
+clinical trials further substantiates the direct targeting rela tionship. No 
+contradictory evidence was found in the sentences provided, leading to a 
+high confidence inference.
+FIGURE 2 Exam ple pipeline outputs and performance e v aluation acr oss r etrie v al appr oaches and LLMs. A, Pipeline output for an established 
+drug–gene r elationship betw een palbociclib and CDK4 in br east cancer . B, Output for CX -5461, a drug with a hist orically misclassified target, using 
+sentenc e-le v el r etrie v al. CX -5461 was pr e viously misclassified as targ eting RNA polymer ase I until e vidence fr om 2021 c onfirmed TOP2B as the 
+primary target. Sentenc e-le v el r etrie v al enabled the pipeline to corr ectly identify TOP2B with high c onfidence, wher eas GPT -4o without r etrie v al did 
+not r ec ognize this targ et (see Supplementary Fig. S4), lik ely due to outdat ed information. C and D , Comparison of AUC and κ statistics acr oss LLMs 
+and r etrie v al methods. Bar plots sho w the performance of six differ ent LLMs ( GPT -4o, Gemini, Llama-3, Llama-3.2-PubMed, Mixtr al, and Mistr al) using 
+sentenc e r etrie v al, abstr act r etrie v al, and without r etrie v al (r elying solely on LLM kno wledge). The κ statistics measur es the agr eement betw een LLM 
+infer ence and the tw o databases. Detailed r esults ar e av ailable in Supplementary Tables S4–S6. 
+AACRJournals.org Cancer Res Commun; 5(4) April 2025 711 
+GeneRxGPT: LLM-Based Drug–Gene Relationship Inference 
+
+(κ values, 0.38 and 0.35). Overall, our analysis highlighted the effectiveness of 
+sentence-level retrieval across most models. Additional performance metrics 
+are provided in Supplementary Tables S4–S6. 
+As a baseline, we fine-tuned BioBERT (21), a non-LLM method, for extracting 
+drug–gene relations from retrieved sentences (See Supplementary Methods). 
+BioBERT was evaluated on a simplified binary classification (target vs. not) 
+without considering cancer context and showed limited performance 
+(AUC ¼ 0.55; Supplementary Table S4). Aggregating sentence-level results at the 
+drug–gene level further yielded a low κ value of 0.11. These findings highlight the 
+need for advanced LLMs to analyze complex drug–gene relationships. 
+Evaluation of c onfidence lev els and c onsiste ncy in 
+GPT -4o infer ence 
+Based on performance evaluation results, our final pipeline was implemented 
+using GPT-4o with sentence-level retrieval. In addition to target/nontarget 
+inference, GPT-4o also assigned a confidence level (high, medium, or low) to 
+each prediction. To assess the reliability of the confidence levels, we con-
+ducted a contamination test on 50 positive and 50 negative drug–gene– 
+cancer cases. For each case, we progressively replaced the 40 relevant re-
+trieved sentences with irrelevant ones randomly sampled from arXiv and 
+analyzed how the outputs changed (see Supplementary Methods). When all 
+40 sentences were irrelevant, inferences were undetermined with low con-
+fidence (Supplementary Fig. S7). Adding a single relevant sentence typically 
+shifted the inference to target, with confidence levels increasing as more 
+relevant sentences were included (Supplementary Fig. S7A). A similar trend 
+was observed for negative cases (Supplementary Fig. S7B), confirming that 
+the confidence levels meaningfully reflect the relevance of retrieved evidence. 
+We also evaluated the consistency of GPT-4o responses by repeating the 
+same input query five times (Supplementary Methods). Overall, the high 
+intraclass correlation coefficient (0.86; 95% confidence interval: 0.84–0.88) 
+indicates strong reliability despite inherent generative variability in LLMs. 
+Mapping a pan-cancer drug–target int er action netw ork 
+We utilized our pipeline to develop a comprehensive map of drug–gene in-
+teractions to uncover potential therapeutic targets and explore drug repur-
+posing opportunities. This process involved analyzing pairwise relationships 
+between 144 FDA-approved oncology drugs and 214 well-documented on-
+cogenes from COSMIC. For this analysis, we refined our prompt to assess both 
+direct binding and indirect modulation relationships for each drug–gene pair 
+(Supplementary Fig. S1). The pipeline also annotated each pair with the as-
+sociated major cancer type(s) based on retrieved sentences. 
+Our pipeline identified 854 high-confidence drug–gene interaction pairs, 
+involving 114 drugs and 154 genes (Fig. 3A; Supplementary Table S7). Of 
+these pairs, 30.7% (n ¼ 262) were direct binding relationships, whereas 
+69.3% (n ¼ 592) involved indirect modulation (Fig. 3B), likely reflecting the 
+complexity of indirect interactions. In the constructed pan-cancer drug–gene 
+network, the top hub gene of the network was mTOR, which interacted with 
+45 drugs, followed by BCL2, STAT3, and EGFR (Fig. 3A; Supplementary 
+Table S8). These genes are central to key cellular processes like proliferation 
+and survival, underscoring their importance in cancer therapies. 
+Next, we assessed the cancer type specificity of these interactions. On average, 
+each drug–gene pair was associated with 2.8 cancer types. As shown in Fig. 3B, 
+only 347 pairs (40.6%) were cancer type–specific. This distribution suggests 
+that most drug–gene interactions span multiple cancer types and highlights 
+shared molecular pathways. Breast and lung cancers had the most drug–gene 
+pairs (403 and 338, respectively), reflecting prevalent cancers with extensive 
+therapeutic development and research interest. In contrast, eye cancer, bile 
+duct cancer, and myeloma had the fewest (4, 12, and 15, respectively; Fig. 3C). 
+Our analysis also revealed drugs with high connectivity in the network 
+(Supplementary Table S9). Cisplatin, a DNA/RNA synthesis inhibitor, 
+emerged as the top hub drug (interacting with 44 genes), followed by kinase 
+inhibitors sorafenib and regorafenib and a microtubule inhibitor paclitaxel. 
+These results underscore the broad versatility of these drugs in interacting 
+with multiple genes. Most drugs (77.2%; n ¼ 88) exhibited multitarget 
+profiles. In particular, all 38 kinase inhibitors interacted with multiple genes 
+(Fig. 3D), reflecting their polypharmacologic potential (44). Similarly, im-
+mune modulators (100.0%; n ¼ 2) and chemotherapy agents, including 
+DNA/RNA synthesis inhibitors (73.1%; n ¼ 26) and microtubule inhibitors 
+(75.0%; n ¼ 8), showed extensive multitarget interactions. This finding aligns 
+with the broad mechanisms of action of these drugs within complex cellular 
+and immunologic contexts. In contrast, targeted therapeutic approaches, 
+such as receptor agonists, hormonal modulators, and the ion channel 
+modulator, demonstrated a higher proportion of single-target specificity 
+(60.0%, 66.7%, and 100.0% for 5, 3, and 1 drugs, respectively). In summary, 
+our pan-cancer network provides a detailed landscape of direct and indirect 
+drug–target relationships, highlighting the versatility of certain drugs across 
+cancers and genes. 
+Identification and vali dation of CTNNB1 mutations in 
+sorafenib sensitivity modulation in liv er canc er 
+Liver cancer is the third leading cause of cancer-related deaths worldwide, 
+underscoring the urgent need for novel therapeutic strategies (16, 17). To 
+investigate potential solutions, we extracted 119 drug–gene pairs (47 drugs and 
+55 genes) associated with liver cancer from the pan-cancer network (Fig. 4A). 
+Sorafenib exhibited the highest number of gene interactions. This multikinase 
+inhibitor is the first FDA-approved drug for hepatocellular carcinoma (HCC), 
+the most common type of liver cancer in adults. It interacted with 25 genes 
+(17 through indirect modulation and 8 through direct binding). Following 
+sorafenib, lenvatinib, another approved drug for HCC, emerged as an im-
+portant multitarget kinase inhibitor, with seven indirect and four direct gene 
+interactors. Within the network, STAT3, JUN, and MTOR were identified as 
+the top hub genes, with relationships to 8, 8, and 7 drugs, respectively. These 
+genes have pivotal roles in liver cancer therapeutics due to their roles in 
+regulating key pathways involved in cell proliferation, survival, and metabolism 
+(45–47). 
+We turned our attention to CTNNB1, the sixth-ranked hub gene in our 
+constructed network and one of the most frequently mutated genes in liver 
+cancer (48). Directly targeting CTNNB1 with drugs has proven challenging 
+(49), and patients with mutated CTNNB1 often respond poorly to the 
+standard-of-care immune checkpoint inhibitors (50). Aligning with current 
+knowledge, CTNNB1 showed no direct targeting relationship with any drug 
+in the network. However, it demonstrated high-confidence indirect inter-
+actions with sorafenib, trametinib, and everolimus, indicating a potential 
+therapeutic benefit of these drugs for this subset of patients with HCC. 
+To validate this observation, we focused on sorafenib due to its established 
+clinical use and the availability of extensive data from large-scale studies. 
+712 Cancer Res Comm un; 5(4) April 2025 https://doi.org/10.1158/2767-9764.CRC-25-0030 | CANCER RESEARCH COMMUNICATIONS 
+Lai et al. 
+
+Specifically, we reanalyzed data from the IMBrave150 phase 3 clinical trial in 
+HCC (see Supplementary Methods; ref. 51). Kaplan–Meier curves showed 
+significantly improved progression-free survival in CTNNB1-mutated patients 
+treated with sorafenib compared with those with wild-type CTNNB1 (Fig. 4B; 
+n ¼ 19 vs. 26; log-rank test P ¼ 0.044), suggesting a meaningful modulation of 
+treatment response. However, no significant difference was observed in overall 
+survival, likely due to alternative pathways or resistance mechanisms. 
+To further isolate the effects of sorafenib and CTNNB1 in a controlled setting 
+with clearer genetic backgrounds, we examined drug sensitivity data (52) and 
+CRISPR knockout screening results among liver cancer cell lines from Cancer 
+Dependency Map (DepMap; Supplementary Methods; ref. 53). Indeed, 
+CTNNB1-mutated cell lines showed significantly greater sensitivity to sorafenib 
+compared with wild-type cells (Fig. 4C; n ¼ 2 vs. 18; one-tailed Mann– 
+Whitney U test P ¼ 0.047). These findings support the role of CTNNB1 
+mutations in modulating sorafenib response. Additionally, we observed a 
+positive correlation (Pearson correlation coefficient ¼ 0.45; n ¼ 18) between 
+the reduction in cancer cell viability induced by sorafenib treatment and that 
+caused by CTNNB1 knockout. This suggests that cells more dependent on 
+CTNNB1 are also more responsive to sorafenib treatment (Fig. 4D). In sum-
+mary, our findings demonstrate that CTNNB1 mutations are associated with 
+enhanced sensitivity to sorafenib in liver cancer, highlighting a potential 
+therapeutic strategy for targeting this vulnerable patient subset. 
+GeneRxGPT: a user-friendly w eb to ol for the infer ence 
+pipeline 
+To enhance accessibility for cancer researchers, we developed GeneRxGPT, 
+an intuitive R Shiny web application that provides easy access to the pipeline 
+and drug–gene network without requiring programming skills or extensive 
+computational resources (Fig. 5A). The tool interfaces with PubMed, Pub-
+Chem, and LLMs through built-in APIs. It is hosted on our institutional 
+Direct binding
+(30.7%)
+Indirect modulation
+(69.3%)
+Cancer type–
+specific (40.6%)
+≥2 cancer
+types (59.4%)
+0 100 200 300 400
+Breast
+Lung
+Colorectal
+Prostate
+Ovarian
+Gastric
+Liver
+Brain
+Pancreatic
+Skin
+Bladder
+Other
+Thyroid
+HNC
+Leukemia
+Kidney
+Cervical
+Sarcoma
+NBL
+Bone
+Esophageal
+UEC
+Lymphoma
+Myeloma
+Bile duct
+Eye
+Number of
+drug–gene pairs
+AB
+CD
+Drug
+Gene
+Direct binding
+Indirect modulation
+01 0 2 0 3 0
+ Kinase
+inhibitors
+ DNA/RNA
+synthesis
+inhibitors
+ Enzyme
+inhibitors
+ Receptor
+antagonists
+ Microtubule
+inhibitors
+ Receptor
+agonists
+ Receptor
+modulators
+ Hormonal
+modulators
+ Immune
+modulators
+Other
+ Ion
+channel
+modulators
+40
+Number of drugs
+Multitarget
+Single-target
+FLT3
+MYCN
+JUN
+SRC
+CDK4
+BCL2
+JAK2
+ALK
+STAT3
+Estradiol valerate
+Olaparib
+Enzalutamide
+Sorafenib
+MTOR
+Doxorubicin
+Cisplatin
+KIT
+Pazopanib
+ARMET
+Paclitaxel
+Tamoxifen
+Cabozantinib
+Regorafenib
+Lenvatinib
+Lapatinib
+EverolimusGemcitabine
+Afatinib
+Gefitinib
+5-Fluorouracil
+Trametinib
+Crizotinib
+Temozolomide
+ImatinibSunitinib
+Vandetanib
+Axitinib
+MYC
+MDM2
+EGFR
+Palbociclib
+FIGURE 3 Pan-cancer drug–target inter action netw ork. A, The netw ork includes 854 drug–gene pairs identified b y our pipeline thr ough pairwise 
+combinations of 214 oncogen es and 144 FD A -appr o v ed oncology drugs as high-confidenc e drug–gene inter actions. For each identified pair , the 
+pipeline summariz es the major cancer type(s ) based on which the infer ence was made fr om the r etrie v ed information. In the netw ork, cir cles and 
+squar es r epr esent drugs and genes, r espectiv ely . Edge c olors indicate the type of inter action. Node sizes ar e pr oportional to the degr ee of 
+connectivity (i.e., the number of inter actions), with names labeled for genes and drugs with mor e than 10 c onnections. Drugs and genes discussed in 
+the main te xt ar e highlighted in bold. B, Distributions of inter action types ( dir ect binding or indir ect modulation) and canc er type specificity 
+(inter actions pr esent in a single or multiple cance r types). C, Distribution of canc er types acr oss 25 primary sites and an additional “other” gr oup of 
+all other cancers. Note that each drug–gene inter action may be associated with multiple cancer types. HNC, head and neck cancer; NBL, 
+neur oblastoma; UEC, ut erine/endometrial cancer . D , Distribution of drug mechanisms of action and targ et specificity , which categoriz es drugs as 
+single-target (int er acting with only one of the 214 genes) or multitar get (inter acting with multiple genes) . 
+AACRJournals.org Cancer Res Commun; 5(4) April 2025 713 
+GeneRxGPT: LLM-Based Drug–Gene Relationship Inference 
+
+A B
++ +
++
++
++
++
++
+++ + ++ +
+0
+25
+50
+75
+100
+0369 1 2
+Progression-free duration (month)
+Survival probability (%)
+CTNNB1-WT
+(n = 26)
+CTNNB1-Mut
+(n = 19)
+Log-rank
+P = 0.044
+Sorafenib response in patients with 
+HCC (IMBrave150 trial)
+−1.0
+−0.5
+0.0
+0.5
+1.0
+CTNNB1-Mut
+(n = 2)
+CTNNB1-WT
+(n = 18)
+C Sorafenib response in liver cancer
+cell lines (PRISM drug screen)
+ Sorafenib sensitivity
+(Log2 fold change) 
+Sensitivity
+Mann–Whitney U test
+P = 0.047
+D Sorafenib  and CTNNB1 dependency
+(PRISM and DepMap CRISPR screens)
+−1.5 −1.0 −0.5 0.0−2.0
+−1.0
+−0.5
+0.0
+0.5
+1.0
+ Sorafenib sensitivity
+(Log2 fold change) 
+CTNNB1 genetic dependency
+(Chronos gene-effect score)
+Drug
+sensitivity
+Gene
+dependencyCorrelation = 0.45
+SNU-398
+HUH6
+Afatinib
+Erlotinib
+Palbociclib
+PIM1
+MDM2
+Pazopanib
+Alpelisib
+Estradiol-valerate
+Pirarubicin
+ABL2
+Etoposide
+Raloxifene
+Axitinib
+AKT2
+Regorafenib
+HIF1A
+Everolimus
+Ribociclib
+PDGFB
+CDK6
+FUBP1
+PDGFRA
+CTNNB1
+SN-38
+HGF
+IL7R
+Sorafenib
+Cabozantinib
+Gemcitabine
+BRAF
+MET
+UBR5
+CXCR4
+HLF
+Hydroxyurea
+DDX5 Cisplatin
+FGFR1
+EGFR
+JUN
+Lenvatinib
+HOXA13
+RAC1FGFR4
+KAT6A
+Cobimetinib
+KIT KDR
+MAP2K1
+KRAS
+MAPK1
+RAF1
+RET NRAS
+Dabrafenib
+SRC PDGFRB
+Dactinomycin
+XPO1
+PLAG1
+FOXA1
+Lorlatinib
+SRSF3
+Darolutamide
+Methotrexate
+Tamoxifen
+JAK2
+Mitoxantrone
+CCND1
+SND1
+Docetaxel
+PTPN11
+Temozolomide
+5-fluorouracil
+AR
+TFEB
+Tivozanib
+CCND3
+Doxorubicin
+Neratinib
+Topotecan
+Abemaciclib
+MTOR
+Olaparib
+Trametinib
+AKT1
+Encorafenib
+CDK4
+Vandetanib
+Abiraterone
+BCL2
+Oxaliplatin
+Vinblastine
+MYC
+Epirubicin
+DDIT3
+Actinomycin-d
+HNRNPA2B1
+Paclitaxel
+STAT3
+Eribulin
+BRD4
+Drug
+Gene
+Direct binding
+Indirect modulation
+FIGURE 4 Drug–target netw ork in liv er cance r . A, Drug–target netw ork in liv er cancer . The netw ork was construct ed b y e xtr acting drug–gene 
+pairs associated with liv er cancer fr om Fig. 3A, in which liv er cancer was identified as a primary cancer type among multiple possible types gener ated 
+thr ough GPT -4o infer ence. The node size and font size ar e pr oportional to the degr ee (i. e., the number of connections ). Drugs and genes discussed in 
+the main te xt ar e highlighted in bold. B, Kaplan–Meier curv es for pr ogr ession-fr ee surviv al of patients with HC C, the major type of liv er canc er , 
+tr eated with sor afenib in the IMBr av e150 clinical trial, comparing CTNNB1-mutated (CTNNB1-Mut; n ¼ 19) and CTNNB1 wild-type patients (CTNNB1- WT ; 
+n ¼ 26). Statistical significance was assessed b y the log-r ank test. C, Bo xplots sho wing differ ential sensitivity to sor afenib betw een CTNNB1-mutated 
+(CTNNB1-Mut; n ¼ 2) and CTNNB1 wild-type liv er canc er c ell lines (CTNNB1- WT ; n ¼ 18). Drug sensitivity data ar e r epr esented as the log
+2 
+fold 
+change in cell c ounts follo wing tr eatment, deriv ed fr om the Pr ofiling Relativ e Inhibition Simultaneously in Mixtur es (PRISM) drug scr eening pr oject. 
+Statistical significance was assessed b y the one-tailed Mann– Whitne y U test. D , Corr elation betw een CTNNB1 genetic dependency (r epr esented b y 
+the Chr onos gene-effect scor e fr om DepMap ) and sor afenib sensitivity (PRISM) in liv er cancer cell lines (n ¼ 18). A mor e negativ e gene-effect scor e 
+r epr esents a str onger genetic dependency . The names of c ell lines e xhibiting str ong dependency on CTNNB1 (with gene-effect scor es < � 1) ar e 
+labeled. 
+714 Cancer Res Comm un; 5(4) April 2025 https://doi.org/10.1158/2767-9764.CRC-25-0030 | CANCER RESEARCH COMMUNICATIONS 
+Lai et al. 
+
+high-performance computing infrastructure and can be accessed at https:// 
+shiny.crc.pitt.edu/generxgpt/. A comprehensive overview, detailed user 
+manual, and input examples are provided on the help page (Fig. 5A). 
+GeneRxGPT features two main modules: (i) drug–gene inference and (ii) 
+drug–gene network, which run the literature-based pipeline and visualize 
+the pan-cancer drug–gene network, respectively. The drug–gene inference 
+module leverages the automated pipeline to infer drug–gene targeting 
+relationships based on real-time literature retrieval. Researchers can simply 
+input a gene (gene symbol or protein name) and a drug (name, Simplified 
+Molecular Input Line Entry System code, or PubChem CID) and select a 
+cancer type through the input panel (Fig. 5B). Users can choose from the two 
+best-performing LLMs, GPT-4o and Gemini, and specify their preferred 
+retrieval method (sentences or abstracts) and exclusion criteria (e.g., pre-
+prints). GeneRxGPT first retrieves detailed information about the query drug 
+and provides a direct URL link to its profile in PubChem (Fig. 5C). The tool 
+AC
+B
+Overview and 
+detailed user manual
+Explanation
+Summary
+Inference
+Link to PubChem
+Link to PubMed
+Main outputs
+References
+Drug information from PubChem
+Input panel
+Homepage
+D
+Drug–gene interaction network
+FIGURE 5 The GeneRxGPT w eb tool. A, Homepage. The homepage pr o vides acc ess to the main drug–gene infer ence module, as w ell as a link to 
+the drug–gene netw ork module. Users can easily test the tool using a built-in e xample. A compr ehensiv e user manual, along with figur e and table 
+legends, is av ailable on the help pages or b y clicking the question mark icon in individual output sections. B, Input panel of the drug–gene infer ence 
+module. Users enter a gene ( gene s ymbol or pr otein name), drug [name, PubChem CID , or Simplified Molecular Input Line Entry Sy stem (SMILES) 
+code ], and cancer type into the input panel. Users can select the desir ed LLMs ( either GPT -4o or Gemini- 1.5 Pr o, curr ently av ailable) and choose 
+whether the infer ence is based on sentenc e- or abstr act-le v el r etrie v al. C, Output panels of the drug–gene infer ence module. Based on the abstr acts 
+or sentenc es r etrie v ed fr om r ele v ant publications in PubMed, the selected LLM gener ates an infer ence and detailed e xplanation of the drug–gene 
+r elationship in the specified cancer type, along with a summary of the r etrie v ed information. Refer ences to r etrie v ed sentenc es or abstr acts ar e 
+pr o vided with PubMed PMIDs and hyperlinks. Additionally , detailed drug information fr om PubChem is pr esented b y an informativ e table and the 
+drug structur e. D , Drug–gene inter action netw ork. This module allo ws users to visualize a drug–target inter action netw ork among 214 oncogenes 
+and 144 FD A -appr o v ed drugs, either acr oss all cancers or within a specific cancer type. 
+AACRJournals.org Cancer Res Commun; 5(4) April 2025 715 
+GeneRxGPT: LLM-Based Drug–Gene Relationship Inference 
+
+then compiles the retrieved sentences or abstracts into a prompt and submits it 
+to the selected LLM for analysis. As shown in Fig. 5C, the output includes a concise 
+one-sentence inference regarding the drug–gene relationship, a detailed explanation 
+of the inference process, and a summary of the retrieved information. Importantly, 
+GeneRxGPT ensures transparency by providing references to all sources used in 
+the inference, including journal names, publication years, titles, and PubMed 
+PMIDs with direct URLs. The drug–gene network module allows users to inter-
+actively examine the pan-cancer drug–gene interaction network (Fig. 5D). Users 
+can view the pan-cancer network, generate a subnetwork associated with a specific 
+cancer type, and filter the network by confidence level (high, medium, or low). 
+Additionally, the tool provides an operable and downloadable table with detailed 
+information on the genes and drugs. 
+In summary, GeneRxGPT provides a streamlined, accessible platform that 
+integrates state-of-the-art LLMs with real-time literature retrieval. We an-
+ticipate that this tool will empower cancer researchers to efficiently explore 
+and interpret drug–gene relationships. 
+Discussion 
+The vast and ever-growing volume of biomedical literature has led to 
+information overload in drug–gene studies, making it increasingly difficult 
+for researchers to stay updated and synthesize relevant insights efficiently 
+(54, 55). Emerging LLMs offer promising solutions, given their unprece-
+dented ability to digest and interpret complex pharmacogenomic infor-
+mation (56, 57). In this article we introduce, to the best of our knowledge, 
+the first retrieval-augmented pipeline using GPT-4o to infer relationships 
+between genes and drugs in cancer research. By integrating real-time in-
+formation from PubMed, our approach addresses a significant limitation of 
+traditional static LLMs, which often rely on outdated knowledge and can 
+generate inaccurate or misleading inference on drug–gene relationships. 
+For example, our analysis successfully corrected the mischaracterizations 
+that occurred when using the static GPT-4o model alone for CX-5461 and 
+OTS964. This discrepancy, partly due to outdated internal data within 
+GPT-4o, highlights the critical importance of real-time literature retrieval 
+in pharmacogenomics research. Additionally, the issue of false PMIDs 
+generated by LLMs (14) underscores the advantage of using our retrieval- 
+augmented approach, which grounds outputs in verifiable and current 
+sources. 
+Our pipeline enabled an efficient exploration among hundreds of approved 
+drugs and key oncogenes. Network analysis identified hub genes (e.g., 
+mTOR, BCL2, and STAT3) and hub drugs (e.g., cisplatin, sorafenib, and 
+regorafenib), revealing key therapeutic strategies. Our case study in liver 
+cancer, particularly on the interaction between CTNNB1 mutations and 
+sorafenib, exemplifies the practical utility of the pipeline. Follow-up litera-
+ture review confirmed this correlation in patients with HCC (51, 58). Beyond 
+its known targets such as VEGFR and RAF (59), sorafenib also affects the 
+WNT signaling pathway in CTNNB1-mutant HCC (60, 61). Studies have 
+shown that sorafenib reduces β-catenin levels and downregulates WNT 
+signaling in CTNNB1-mutant HCC cells and animal models, likely through 
+interactions with other cellular pathways including TGFβ (60). Our findings 
+were further validated by data from a clinical trial and drug sensitivity assays. 
+These findings support the hypothesis that CTNNB1-mutant tumors may 
+exhibit enhanced sensitivity to sorafenib, offering potential therapeutic 
+benefit for this subset of patients. 
+Despite its strengths, our pipeline has limitations that warrant further de-
+velopment. The current prompts are tailored to identify direct and indirect 
+interactions. However, the adaptability of the pipeline allows for the ex-
+pansion of prompts to accommodate more complex interaction and gene 
+mutation types, should future research require a deeper or more specific 
+analysis of drug–gene dynamics. Beyond retrieval-based methods, creating 
+domain-specific models based on fine-tuning may be a promising alternative. 
+However, our results show that both fine-tuned LLM (Llama-3.2-PubMed) 
+and non-LLM (BioBERT) underperformed compared with other models. 
+Further studies are warranted to evaluate fine-tuning strategies for targeted 
+biomedical tasks using larger annotated datasets and improved optimization. 
+Another key issue is the inclusion of irrelevant information in the retrieved 
+data, which can introduce noise and affect inference accuracy. Although our 
+pipeline uses embedding-based search engines (LitSense) and keyword 
+searches (PubMed search engine) to filter relevant data efficiently, some 
+irrelevant content may persist. To mitigate this, our method assigns a con-
+fidence level to each inference. We verified these confidence levels using a 
+contamination approach. However, more robust content filtering mecha-
+nisms may be needed to address irrelevant or even fabricated information 
+(62). To this end, emerging multiagent systems that detect and assess the 
+relevance of retrieved data (arXiv 2024.10.08.2405.18111) could be integrated 
+into future versions of our pipeline. 
+Hallucination is a critical limitation of LLMs (12). Our pipeline leverages 
+retrieval-augmented generation to enhance factual accuracy by grounding 
+outputs in real-time information from authoritative sources (arXiv 
+2024.01.08.2401.01313; arXiv 2021.04.15.2104.07567). We used a multi-
+pronged approach: real-time data and knowledge retrieval from the litera-
+ture, prompt engineering to ensure well-grounded responses, and rigorous 
+evaluation of generated inferences against established drug–gene relation-
+ships. These measures ensure that inferred drug–gene relationships are not 
+only up-to-date but also scientifically sound, as demonstrated by the sys-
+tematic evaluation of inferences. This benchmarking process validates the 
+accuracy of the pipeline’s outputs and directly assesses the risk of halluci-
+nation. However, whereas the inferences are grounded in robust evaluation, 
+the explanations and free-text summaries derived from the retrieved data 
+remain more vulnerable to hallucination, particularly in cases in which in-
+complete or ambiguous data affect rare or poorly studied interactions. To 
+address this challenge, future improvements could include multiagent sys-
+tems to collaboratively filter retrieved content and verify generated results 
+(arXiv 2024.05.25.2405.16205) and hallucination detection methods (63) to 
+further enhance the reliability of explanatory text and summaries (12). These 
+enhancements will be essential for maintaining accuracy and trustworthiness 
+as the complexity of biomedical research continues to grow. 
+The selection and curation of negative drug–gene relationships for evalua-
+tion posed a challenge due to the scarcity of well-documented negative in-
+teractions in databases. PharmGKB served as our primary source, with “not 
+associated” pairs representing relationships evaluated in the literature but 
+lacking statistically significant associations. These cases were selected for 
+their likely reliability as true negatives. However, the absence of specific 
+cancer annotations required us to generalize the disease focus to “cancer,” 
+which may underrepresent certain interactions and introduce bias favoring 
+well-studied drugs and genes. Future expansions could incorporate broader 
+resources, such as like DGIdb (3), that may offer a more comprehensive 
+range of interactions. 
+716 Cancer Res Comm un; 5(4) April 2025 https://doi.org/10.1158/2767-9764.CRC-25-0030 | CANCER RESEARCH COMMUNICATIONS 
+Lai et al. 
+
+Our pipeline relies on PubMed as the primary source for information re-
+trieval, but its coverage is not exhaustive. Expanding to include clinical 
+trial repositories, pharmacokinetic/pharmacodynamic databases, high- 
+throughput genetic and drug screens, and multi-omics datasets could en-
+hance drug–gene interaction analysis (64). Additionally, structured data 
+formats like knowledge graphs may enrich contextual information and im-
+prove model performance. Another challenge is managing context window 
+limits and computation costs, as our prompts include up to 40 sentences or 
+10 abstracts, potentially leading to truncation in some LLMs. Future im-
+provements could focus on summarization and selective synthesis to opti-
+mize efficiency and cost-effectiveness. 
+Authors’ Disclosures 
+S.P. Monga reports grants from Alnylam, Fog Pharma, and Revolution 
+Medicine outside the submitted work. Y.-C. Chiu reports grants from the 
+NIH and the Leukemia Research Foundation during the conduct of the 
+study. No disclosures were reported by the other authors. 
+Authors’ Contributions 
+Y.-J. Lai: Data curation, formal analysis, validation, investigation, visuali-
+zation, methodology, writing–original draft. L.-J. Wang: Conceptualization, 
+data curation, software, investigation, visualization, methodology, writing– 
+original draft. T.M. Yasaka: Data curation, formal analysis, validation, in-
+vestigation, visualization. Y. Shin: Data curation, methodology. M. Ning: 
+Methodology. Y. Tan: Investigation. C.-H. Shih: Investigation. Y. Guo: 
+Investigation. P.-Y. Chen: Investigation. H. Galloway: Investigation. Z. Liu: 
+Investigation. A. Das: Investigation. G.C. Tseng: Project administration, 
+writing–review and editing. S.P. Monga: Supervision, funding acquisition, 
+investigation, project administration, writing–review and editing. Y. Huang: 
+Conceptualization, supervision, funding acquisition, investigation, project 
+administration, writing–review and editing. Y.-C. Chiu: Conceptualization, 
+supervision, funding acquisition, investigation, methodology, project ad-
+ministration, writing–review and editing. 
+Acknowledgments 
+This work was supported by the NIH (R00CA248944, R35GM154967, and 
+3R00CA248944-04S1 from the Office of the Director, and R03OD036494 
+to Y.-C. Chiu; U01CA279618 and R21GM155774 to Y. Huang; R01CA285337 
+to G.C. Tseng and Y.-C. Chiu; R01CA250227 and R01CA251155 to 
+S.P. Monga; P30CA047904 to the University of Pittsburgh Medical Center 
+Hillman Cancer Center and Y.-C. Chiu; P30DK120531 to the Genomics 
+and Systems Biology Core of the Pittsburgh Liver Research Center, 
+S.P. Monga, and Y.-C. Chiu; T32EB001026 to S.P. Monga and T.M. 
+Yasaka; and S10OD028483 to the Center for Research Computing of the 
+University of Pittsburgh) and the Leukemia Research Foundation (New 
+Investigator Research Grant to Y.-C. Chiu). The funding sources had no 
+role in the design of the study, collection, analysis, and interpretation of 
+data, and writing the manuscript. The authors also thank Dr. Fangping Mu 
+at the University of Pittsburgh Center for Research Computing for 
+establishing the web server that hosts GeneRxGPT. The authors utilized 
+GPT-4o of ChatGPT (OpenAI; San Francisco, CA) to enhance the read-
+ability and language of this work. Following its use, the authors thoroughly 
+reviewed and edited the content as necessary and take full responsibility 
+for the content of the publication. 
+Note 
+Supplementary data for this article are available at Cancer Research Com-
+munications Online (https://aacrjournals.org/cancerrescommun/). 
+Received January 25, 2025; revised March 17, 2025; accepted April 15, 2025; 
+posted first April 28, 2025. 
+References 
+1. Dugger SA , Platt A, Goldstein DB. Drug de vel opment in the er a of pr ecision 
+medicine. Nat Re v Drug Disco v 2018;17:183–96. 
+2. Paananen J, Fortino V . An omics perspective on drug target disco v ery plat-
+forms. Brief Bioinform 2020;21:1937 –53. 
+3. Cannon M, Ste v enson J, Stahl K, Basu R, Coffman A, Kiwala S, et al. DGIdb 5.0: 
+r ebuilding the drug-gene inter action database for pr ecision medicine and 
+drug disco v ery platforms. Nucleic Acids Res 202 4;52:D1227 –35. 
+4. Jin Q, Leaman R, Lu Z. PubMed and be y ond: biomedical liter ature searc h in the 
+age of artificial intellige nce. EBioMedicine 202 4;100:104988. 
+5. Fiorini N, Canese K, Star chenk o G, Kir ee v E, Kim W , Miller V , et al. Best match: 
+ne w r ele v ance sear ch for PubMed. PLoS Biol 2018;16:e2005343. 
+6. Bor ah R, Br o wn A W , Capers PL, Kaiser KA. Analysis of the time and w ork ers 
+needed to conduct sy stematic r e vie ws of medical interv entions using data 
+fr om the PROSPERO r egistry . BMJ open 2017;7:e012545. 
+7 . Roth JA, Cristiano RJ. Gene ther ap y for cancer: what hav e w e done and wher e 
+ar e we going? J Natl Cancer Inst 199 7;89:21–39 . 
+8. Nay ak A, Alkaitis MS, Nay ak K, Nik olo v M, Weinfurt KP , Schulman K. Com -
+parison of history of pr esent illness summaries gener ated b y a chatbot and 
+senior internal medicine r esidents. JAMA Intern Med 2023;183:1026– 7 . 
+9. Hu M, Alkhairy S, Lee I, Pillich RT , Fong D , Smith K, et al. Ev aluation of large 
+language models for disco ve ry of gene set function. Nat Methods 2025;22:82–91. 
+10. Hou W , Ji Z. Assessing GPT -4 for cell type annotation in single-cell RNA -seq 
+analysis. Nat Methods 202 4;21:1462–5. 
+11. Ji Z, Lee N, Friesk e R, Yu T , Su D , Xu Y , et al. Surv e y of hallucination in natur al 
+language gener ation. ACM Comput Surv 2023;55:1–38. 
+12. Huang L, Yu W , Ma W , Zhong W , Feng Z, Wang H, et al. A surv ey on halluci-
+nation in large language models: principles, tax onomy , challenges, and open 
+questions. ACM Tr ans Inf Sy st 2025;43:1–55. 
+13. Le wis P , Per ez E, Piktus A, Petr oni F , Karpukhin V , Go y al N, et al. Retrie v al- 
+augmented gener ation for kno wledge-intensiv e nlp tasks. Ad v Neur al Inf 
+Pr ocess Sy st 2020;33:9459– 7 4. 
+14. Jin Q, Yang Y , Chen Q, Lu Z. GeneGPT : augmenting large language models 
+with domain tools for impr o v ed acc ess to biomedical information. Bio-
+informatics 202 4;40:btae0 75. 
+15. Gilbert S, Kather JN, Hogan A. Augmented non-hallucinating large language 
+models as medical information curat ors. NP J Digit Med 202 4;7:100. 
+16. Alaw yia B, Constantinou C. Hepatoc ellular car cinoma: a narr ativ e r e vie w on curr ent 
+kno wledge and futur e pr ospects. Curr Tr eat Options Oncol 2023;2 4:711–2 4. 
+17 . Sung H, Ferlay J, Siegel RL, Lav ersanne M, Soerjomatar am I, Jemal A, et al. 
+Global cancer statistics 2020: GL OBOCAN estimates of incidence and mor-
+tality w orldwide for 36 cancers in 185 cou ntries. CA Cancer J Clin 2021;71: 
+209–49. 
+AACRJournals.org Cancer Res Commun; 5(4) April 2025 717 
+GeneRxGPT: LLM-Based Drug–Gene Relationship Inference 
+
+18. Sa y ers EW , Beck J, Bolton EE, Brister JR, Chan J, Comeau DC, et al. Database 
+r esour ces of the national cent er for Biotechnology information. Nucleic Acids 
+Res 202 4;52:D33–43. 
+19. Allot A, Chen Q, Kim S, Ver a Alv ar ez R, Comeau DC, Wilbur WJ, et al. LitSense: 
+making sense of biomedical liter atur e at sentenc e le v el. Nucleic Aci ds Res 
+2019;4 7:W594–9. 
+20. Wang L, Mao Y , Wang L, Sun Y , Song J, Zhang Y . Suitability of GPT -4o as an 
+e v aluator of cardiop ulmonary r esuscitation skills ex aminations. Resuscitation 
+202 4;204:110404. 
+21. Lee J, Yoon W , Kim S, Kim D , Kim S, So CH, et al. BioBERT : a pr e-tr ained 
+biomedical language r epr esentation model for biomedical te xt mining. Bio-
+informatics 2020;36:1234–40. 
+22. Wei J, Wang X, Schuurmans D , Bosma M, Xia F , Chi E, et al. Chain-of-thought 
+pr ompting elicits r easoning in large language models. Adv Neura l Inf Pr ocess 
+Sy st 2022;35:2 482 4–37 . 
+23. K ojima T , Gu SS, Reid M, Matsuo Y , Iw asaw a Y . Larg e language models ar e 
+zer o-shot r easoners. Adv Neura l Inf Pr ocess Sy st 2022;35:22199–213. 
+2 4. Pantziarka P , Capistr ano I R, De Potter A, Vandeborne L, Bouche G. An 
+open acc ess database of licensed cancer drugs. Fr ont Pharmacol 2021;12: 
+6275 7 4. 
+25. Whirl-Carrillo M, McDonagh EM, Hebert J, Gong L, Sangkuhl K, Thorn C, et al. 
+Pharmaco genomics kno wledge for personalized medicine. Clin Pharmacol 
+Ther 2012;92 :414– 7 . 
+26. Whirl-Carrillo M, Huddart R, Gong L, Sangkuhl K, Thorn CF , Whale y R, et al. An 
+e vidence-based fr ame w ork for ev aluating pharmac ogenomics know ledge for 
+personaliz ed medicine. Clin Pharmacol Ther 2021;110:563– 72. 
+27 . Hanle y JA, McNeil BJ. The meaning and use of the ar ea under a r eceiv er 
+oper ating char acteristic (ROC) curv e. Radiology 1982;143:29–36. 
+28. Fluss R, Far aggi D , Reiser B. Estimation of the Youden Inde x and its associated 
+cutoff point. Biom J 2005;4 7:458– 72. 
+29. Sondka Z, Dhir NB, Carv alho-Silv a D , Jupe S, Madhumita, McLar en K, Starke y 
+M, et al. C OSMIC: a cur ated database of somatic v ariants and clinical data for 
+cancer . Nucleic Acids Res 202 4;52:D1210– 7 . 
+30. Cor sello SM, Bittk er JA, Liu Z, Gould J, McCarr en P , Hirschman JE, et al. The 
+drug r epurposing hub: a ne xt-gener ation drug libr ary and information r e-
+sour ce. Nat Med 2017;23:405–8. 
+31. Shannon P , Markiel A, Ozier O , Baliga NS, Wang JT , Ramage D , et al. Cyt o-
+scape: a softwar e en vir onment for integr ated models of biomolecular inter-
+action netw orks. Genome Res 2003;13:2 498–504. 
+32. Chang W , Cheng J, Allair e J, Sie v ert C, Schloerk e B, Xie Y , et al. shiny: w eb 
+application fr ame w ork for R (R package v ersion 1. 10. 0.9000) [C omputer 
+softwar e]. 2025. 
+33. Wickham H. httr: tools for wor king with URLs and HTTP (R package v ersion 1. 
+4. 6) [C omputer softwar e] 2023. 
+34. Guha R. Chemical informatics functionality in R. J Stat Softw 200 7;18:1– 16. 
+35. Guile y KZ, Ste vens on JW , Lou K, Barko vich KJ, Kumar asamy V , Wijer atne TU, 
+et al. p27 allosterically activ ates cyc lin-dependent kinase 4 and antagonizes 
+palbociclib inhibition. Science 2019;366:eaa w2106. 
+36. Loft M, Lok S W , De Boer R, Malik L, Gr eenberg S, Yeo B, et al. Addition of 
+endocrine ther ap y to dual anti-HER2 target ed ther ap y in initial tr eatment of 
+HER2+/HR+ metastatic br east cancer . Br east Cancer Res Tr eat 2023;198: 
+6 7 – 7 4. 
+37 . Weil MK, Chen A. P ARP inhibitor trea tment in o v arian and br east cancer . Curr 
+Pr obl Cancer 2011;35:7 –50. 
+38. Dry gin D , Lin A, Bliesath J, Ho CB, O’Brien SE, Pr offitt C, et al. Targeting RNA 
+polymer ase I with an or al small molecule CX -5461 inhibits ribosomal RNA 
+synthes is and solid tumor gr o wth. Cancer Res 2011;71:1418– 30. 
+39. Pan M, Wright WC, Chapple RH, Zubair A, Sandhu M, Batchelder JE, et al. The 
+chemother apeutic CX -5461 primarily targets TOP2B and e xhibits selectiv e 
+activity in high-risk neur oblastoma. Nat Commun 2021;12:6468. 
+40. Matsuo Y , Park JH, Miy amoto T , Yamamot o S, Hisada S, Alachkar H, et al. 
+TOPK inhibitor induces complet e tumor r egr ession in x enogr aft models of 
+human cancer thr ough inhibition of cytokinesis. Sci Tr ansl Med 2014;6: 
+259r a145. 
+41. Lin A, Giuliano CJ, Palladino A, John KM, Abr amo wicz C, Yuan ML, et al. Off- 
+target to xicity is a common mechanism of action of cancer drugs undergoing 
+clinical trials. Sci Tr ansl Med 2019;11:eaaw84 12. 
+42. K elso S, O’Brien S, Kurino v I, Angers S, Sicheri F . Crystal structur e of the 
+CDK11 kinase domain bound to the small-molecule inhibitor O TS964. Structure 
+2022;30:1615–25. e4. 
+43. Brysbaert M. Ho w many w ords do w e r ead per minute ? A r e vie w and meta- 
+analysis of r eading r ate. J Mem Lang 2019;109:10404 7 . 
+44. Ryszkie wicz P , Malino wska B, Schlick er E. Polypharmacology: pr omises and 
+ne w drugs in 2022. Pharmaco l Rep 2023;75:7 55– 70 . 
+45. Hashemi M, Sabouni E, Rahmanian P , Entezari M, Mojtaba vi M, Raei B, et al. 
+Deciphering STAT 3 signaling potential in hepatoc ellular carc inoma: tumori-
+genesis, treat ment r esistance, and pharmacological significance. Cell Mol Biol 
+Lett 2023;28:33. 
+46. Panw ar V , Singh A, Bhatt M, Tonk RK, Azizo v S, Raza AS, et al. Multifacet ed 
+r ole of mTOR (mammalian target of r apamy cin) signaling pathw ay in human 
+health and disease. Signal Tr ansduct Target Ther 2023;8:37 5. 
+47 . Eferl R, Ricci R, K enner L, Z enz R, David JP , Rath M, et al. Liv er tumor de v elopment. 
+c-Jun antagonizes the pr oapoptotic activity of p53. Cell 2003;112:181–9 2. 
+48. Cancer Genome A tlas Resear ch Netw ork. Compr ehensiv e and integr ativ e ge-
+nomic char acterization of hepat ocellular car cinoma. Cell 2017;169:1327 –41. e23. 
+49. Llo v et J, K elle y R, Villanue va A, Singal A, Pikarsky E, Roay aie S, et al. Hepa-
+toc ellular car cinoma. Nat Re v Dis Primers 2021;7:6. 
+50. Ruiz de Galarr eta M, Br esnahan E, Molina-Sanchez P , Lindblad KE, Maier B, Sia 
+D , et al. β-Catenin activ ation pr omotes immune escape and r esistance to anti- 
+PD- 1 ther ap y in hepatocel lular car cinoma. Cancer Disco v 2019;9:112 4–41 . 
+51. Zhu AX, Abbas AR, de Galarr eta MR, Guan Y , Lu S, Ko eppen H, et al. Molecular 
+corr elates of clinical r esponse and r esistance to atez olizumab in combination 
+with be va cizumab in adva nced hepatoc ellular car cinoma. Nat Med 2022;28: 
+1599–611. 
+52. Corsello SM, Nagari RT , Spangler RD , Rossen J, Ko cak M, Bry an JG, et al. 
+Disco veri ng the anti-canc er potential of non-onc ology drugs b y sy stematic 
+viability pr ofiling. Nat Cance r 2020;1:235–48. 
+53. Tsherniak A, Vazquez F , Montgomery PG, Weir BA, Kryuk o v G, Co wle y GS, 
+et al. Defining a cancer dependency map. Cell 2017;170:564– 7 6.e16. 
+54. Landhuis E. Scientific liter atur e: information o v erload. Natur e 2016;535:45 7 –8. 
+55. Hoł y st JA, Mayr P , Thelw all M, Fr ommholz I, Havlin S, Sela A, et al. Pr otect our 
+envir onment fr om information o v erload. Nat Hum Behav 202 4;8:402–3. 
+56. Murugan M, Yuan B, Venner E, Ballantyne CM, Robinson KM, Coons JC, et al. 
+Empo w ering personaliz ed pharmacogenomics with gener ative AI solutions. 
+J Am Med Inform Assoc 202 4;31:1356–66. 
+57 . Patrinos GP , Sarhangi N, Sarr ami B, Khoday ari N, Larijani B, Hasanzad M. Using 
+ChatGPT to pr edict the futur e of personalized medicine. Pharmacogenomics J 
+2023;23:178–84. 
+58. Lehrich BM, Tao J, Liu S, Hirsch TZ, Yasaka TM, Cao C, et al. De ve lopment of 
+mutated beta-catenin gene signatur e to identify CTNNB1 mutations fr om whole 
+and spatial tr anscriptomic data in patients with HC C. JHEP Rep 202 4;6:101186. 
+59 . Wilhelm SM, Carter C, Tang L, Wilkie D , McNabola A, Rong H, et al. BA Y 43- 
+9006 e xhibits br oad spectrum or al antitumor activity and targets the RAF / 
+MEK/ERK pathw ay and r ecept or tyr osine kinases inv olv ed in tumor pr ogr es-
+sion and angiogenesis. Cancer Res 2004;64:7 099– 109. 
+60. Lachenmay er A, Alsinet C, Savic R, Cabellos L, Toffanin S, Hoshida Y , et al. Wnt- 
+pathw ay activ ation in tw o molecular classes of hepatoc ellular car cinoma and 
+e xperimental modulation b y sor afenib. Clin Cancer Res 2012;18:4997 –500 7 . 
+6 1. Jia D , Dong R, Jing Y , Xu D , Wang Q, Chen L, et al. Ex ome sequencing of 
+hepatoblast oma r e v eals no vel mutations and cancer genes in the Wnt path-
+wa y and ubiquitin ligase comple x. Hepatology 2014;60:1686–96. 
+62. Yang J, Xu H, Mirzo y an S, Chen T , Liu Z, Liu Z, et al. Poisoning medical kno wl-
+edge using large language models. Nat Machine Intellig ence 202 4;6:1156–68. 
+63. Farquhar S, K ossen J, Kuhn L, Gal Y . Detecting hallucinations in large language 
+models using semantic entr op y . Natur e 202 4;630:625–3 0. 
+64. Nay ak T , Wang LJ, Ning M, Rubannelsonkumar G, Jin E, Zheng S, et al. 
+DepLink: an R Shiny app to sy stematically link genetic and pharmacologic 
+dependencies of cancer . Bioinform Adv 2023;3:vbad0 76 . 
+718 Cancer Res Comm un; 5(4) April 2025 https://doi.org/10.1158/2767-9764.CRC-25-0030 | CANCER RESEARCH COMMUNICATIONS 
+Lai et al. 
